@@ -53,10 +53,66 @@ static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
+void select_column(int col);
+void set_data(int x);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint8_t row[8] = {0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11, 0x0E};
+
+void select_column(int col)
+{
+
+	GPIOB->ODR |= ((1 << 8) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 4) | (1 << 3) | (1 << 1) | (1 << 0));
+	if(col == 0)
+	{
+		GPIOB->ODR &= ~(1 << 8);
+	}
+
+	if(col == 1)
+	{
+		GPIOB->ODR &= ~(1 << 7);
+	}
+
+	if(col == 2)
+	{
+		GPIOB->ODR &= ~(1 << 6);
+	}
+
+	if(col == 3)
+	{
+		GPIOB->ODR &= ~(1 << 5);
+	}
+
+	if(col == 4)
+	{
+		GPIOB->ODR &= ~(1 << 4);
+	}
+
+	if(col == 5)
+	{
+		GPIOB->ODR &= ~(1 << 3);
+	}
+
+	if(col == 6)
+	{
+		GPIOB->ODR &= ~(1 << 1);
+	}
+
+	if(col == 7)
+	{
+		GPIOB->ODR &= ~(1 << 0);
+	}
+
+}
+
+void set_data(int x)
+{
+	GPIOA->ODR = row[x];
+}
 
 /* USER CODE END 0 */
 
@@ -92,21 +148,27 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
- // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8, 1);
 
-  //GPIOB->ODR |= ((1<<0)|(1<<1)|(1<<3)|(1<<4)|(1<<5)|(1<<6)|(1<<7)|(1<<8));
 
-  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_0,1);	  // Set row "high"
-  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_1,0);   // Set column "low"
+  GPIOB->ODR |= ((1<<0)|(1<<1)|(1<<3)|(1<<4)|(1<<5)|(1<<6)|(1<<7)|(1<<8));
+
+  ///GPIOA->ODR |= ((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<6)|(1<<7));
+
   /* USER CODE END 2 */
  
- 
+
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
+	  for(int i=0; i<8; i++)
+	  {
+		  set_data(i);
+		  select_column(i);
+		  HAL_Delay(1);
+	  }
 
     /* USER CODE BEGIN 3 */
   }
