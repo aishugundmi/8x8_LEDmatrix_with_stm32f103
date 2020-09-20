@@ -20,10 +20,13 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "tim.h"
+#include "usart.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +44,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 
@@ -49,12 +51,13 @@ UART_HandleTypeDef huart1;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 void select_column(int col);
 void set_data(int x);
+void set_pixel(int x, int y, int colour);
+void scroll_text(char *p);
+void scroll_letter(char c);
 
 /* USER CODE END PFP */
 
@@ -161,7 +164,7 @@ uint8_t letter[][5] = {  0x00, 0x00, 0x00, 0x00, 0x00,// 0x20 (Space)
 					0x20, 0x10, 0x10, 0x20, 0x10,// 0x7E
 					0xF0, 0x88, 0x84, 0x88, 0xF0,// 0x7F 
 					0x28, 0x7C, 0xAA, 0x82, 0x44,// 0x80 €
-					0xF0, 0x29, 0x27, 0x21, 0xFF,// 0x81 
+					0xF0, 0x29, 0x27, 0x21, 0xFF,// 0x81 �?
 					0x00, 0xA0, 0x60, 0x00, 0x00,// 0x82 ‚
 					0x40, 0x90, 0x7C, 0x12, 0x04,// 0x83 ƒ
 					0xC0, 0xA0, 0x00, 0xC0, 0xA0,// 0x84 „
@@ -173,14 +176,14 @@ uint8_t letter[][5] = {  0x00, 0x00, 0x00, 0x00, 0x00,// 0x20 (Space)
 					0x4C, 0x93, 0x92, 0x93, 0x64,// 0x8A Š
 					0x00, 0x10, 0x28, 0x00, 0x00,// 0x8B ‹
 					0x7C, 0x82, 0x82, 0x7C, 0x92,// 0x8C Œ
-					0x02, 0xFE, 0x90, 0x90, 0x60,// 0x8D 
+					0x02, 0xFE, 0x90, 0x90, 0x60,// 0x8D �?
 					0xC2, 0xA3, 0x92, 0x8B, 0x86,// 0x8E Ž
-					0x44, 0x92, 0x8A, 0x92, 0x7C,// 0x8F 
-					0x70, 0x88, 0x90, 0x60, 0x98,// 0x90 
+					0x44, 0x92, 0x8A, 0x92, 0x7C,// 0x8F �?
+					0x70, 0x88, 0x90, 0x60, 0x98,// 0x90 �?
 					0x00, 0x02, 0x04, 0x08, 0x00,// 0x91 ‘
 					0x00, 0x08, 0x04, 0x02, 0x00,// 0x92 ’
 					0x02, 0x04, 0x0A, 0x04, 0x08,// 0x93 “
-					0x08, 0x04, 0x0A, 0x04, 0x02,// 0x94 ”
+					0x08, 0x04, 0x0A, 0x04, 0x02,// 0x94 �?
 					0x00, 0x38, 0x38, 0x38, 0x00,// 0x95 •
 					0x00, 0x10, 0x10, 0x10, 0x10,// 0x96 –
 					0x10, 0x10, 0x10, 0x10, 0x10,// 0x97 —
@@ -189,7 +192,7 @@ uint8_t letter[][5] = {  0x00, 0x00, 0x00, 0x00, 0x00,// 0x20 (Space)
 					0x90, 0xA9, 0xAA, 0xA9, 0x40,// 0x9A š
 					0x00, 0x88, 0x50, 0x20, 0x00,// 0x9B ›
 					0x70, 0x88, 0x70, 0xA8, 0xB0,// 0x9C œ°
-					0x38, 0x7C, 0xF8, 0x7C, 0x38,// 0x9D 
+					0x38, 0x7C, 0xF8, 0x7C, 0x38,// 0x9D �?
 					0x88, 0xC9, 0xAA, 0x99, 0x88,// 0x9E ž
 					0x1C, 0x21, 0xC0, 0x21, 0x1C,// 0x9F Ÿ
 					0x00, 0x00, 0x00, 0x00, 0x00,// 0xA0
@@ -225,7 +228,7 @@ uint8_t letter[][5] = {  0x00, 0x00, 0x00, 0x00, 0x00,// 0x20 (Space)
 					0x15, 0x1F, 0x60, 0x50, 0xF8,// 0xBE ¾
 					0x60, 0x90, 0x8A, 0x80, 0x40,// 0xBF ¿
 					0xF0, 0x29, 0x26, 0x28, 0xF0,// 0xC0 À
-					0xF0, 0x28, 0x26, 0x29, 0xF0,// 0xC1 Á
+					0xF0, 0x28, 0x26, 0x29, 0xF0,// 0xC1 �?
 					0xF0, 0x2A, 0x29, 0x2A, 0xF0,// 0xC2 Â
 					0xF2, 0x29, 0x29, 0x2A, 0xF1,// 0xC3 Ã
 					0xF0, 0x29, 0x24, 0x29, 0xF0,// 0xC4 Ä
@@ -237,10 +240,10 @@ uint8_t letter[][5] = {  0x00, 0x00, 0x00, 0x00, 0x00,// 0x20 (Space)
 					0xF8, 0xAA, 0xA9, 0xAA, 0x88,// 0xCA Ê
 					0xF8, 0xAA, 0xA8, 0xAA, 0x88,// 0xCB Ë
 					0x00, 0x89, 0xFA, 0x88, 0x00,// 0xCC Ì
-					0x00, 0x88, 0xFA, 0x89, 0x00,// 0xCD Í
+					0x00, 0x88, 0xFA, 0x89, 0x00,// 0xCD �?
 					0x00, 0x8A, 0xF9, 0x8A, 0x00,// 0xCE Î
-					0x00, 0x8A, 0xF8, 0x8A, 0x00,// 0xCF Ï
-					0x10, 0xFE, 0x92, 0x82, 0x7C,// 0xD0 Ð
+					0x00, 0x8A, 0xF8, 0x8A, 0x00,// 0xCF �?
+					0x10, 0xFE, 0x92, 0x82, 0x7C,// 0xD0 �?
 					0xFA, 0x11, 0x21, 0x42, 0xF9,// 0xD1 Ñ
 					0x78, 0x85, 0x86, 0x84, 0x78,// 0xD2 Ò
 					0x78, 0x84, 0x86, 0x85, 0x78,// 0xD3 Ó
@@ -253,7 +256,7 @@ uint8_t letter[][5] = {  0x00, 0x00, 0x00, 0x00, 0x00,// 0x20 (Space)
 					0x7C, 0x80, 0x82, 0x81, 0x7C,// 0xDA Ú
 					0x78, 0x82, 0x81, 0x82, 0x78,// 0xDB Û
 					0x7C, 0x81, 0x80, 0x81, 0x7C,// 0xDC Ü
-					0x04, 0x08, 0xF2, 0x09, 0x04,// 0xDD Ý
+					0x04, 0x08, 0xF2, 0x09, 0x04,// 0xDD �?
 					0x81, 0xFF, 0x24, 0x24, 0x18,// 0xDE Þ
 					0x80, 0x7C, 0x92, 0x92, 0x6C,// 0xDF ß
 					0x40, 0xA9, 0xAA, 0xA8, 0xF0,// 0xE0 à
@@ -345,6 +348,68 @@ void set_data(int x)
 	GPIOA->ODR = row[x];
 }
 
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *tim)
+{
+	static uint8_t i = 0;
+	set_data(i);
+	select_column(i);
+	i++;
+	i &= 7;
+}
+
+void set_pixel(int x, int y, int colour)
+{
+	if(colour)
+	{
+		row[x] |= (1 << y);
+	}
+	else
+	{
+		row[x] &= ~(1 << y);
+	}
+}
+
+int __io_putchar(int ch)
+{
+   // Code to write character 'ch' on the UART
+	uint8_t val = (uint8_t)ch;
+	HAL_UART_Transmit(&huart1, &val, 1, 1000);
+	return 0;
+}
+
+
+void scroll_text(char *p)
+{
+	while(*p)
+	{
+		scroll_letter(*p);
+		p++;
+	}
+}
+
+
+void scroll_letter(char c)
+{
+	for(int i = 0 ; i < 6; i++)
+	{
+		for(int j = 0; j < 7 ; j++)
+		{
+			row[j] = row[j+1];
+		}
+
+		if(i == 5)
+		{
+			row[7] = 0x00;
+		}
+		else
+		{
+			row[7] = letter[c - ' '][i];
+		}
+		HAL_Delay(100);
+	}
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -354,6 +419,8 @@ void set_data(int x)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+
 
   /* USER CODE END 1 */
   
@@ -377,44 +444,29 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART1_UART_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
-
+  HAL_TIM_Base_Start_IT(&htim1);
 
   GPIOB->ODR |= ((1<<0)|(1<<1)|(1<<3)|(1<<4)|(1<<5)|(1<<6)|(1<<7)|(1<<8));
-  uint8_t c = 'A';
+
 
   ///GPIOA->ODR |= ((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<6)|(1<<7));
 
+
   /* USER CODE END 2 */
- 
+
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+
   while (1)
   {
 
-	  if(c > 'Z')
-	  {
-		  c = 'A';
-	  }
-	  for(int i = 0; i < 5; i++)
-	  {
-		  row[i] = letter[c - ' '][i];
-	  }
-	  c++;
-
-	  ///////////////////////////////////////////////////////
-	  for(int j = 0; j < 62; j++)
-	  {
-
-		  	 for(int i=0; i<8; i++)
-		 	{
-		  		 	set_data(i);
-		 			select_column(i);
-		 			HAL_Delay(1);
-		 	}
-	 }
-    /* USER CODE END WHILE */
+	  scroll_text("Hello");
+	/* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
@@ -438,7 +490,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -452,86 +504,10 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
-                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4 
-                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : PA0 PA1 PA2 PA3 
-                           PA4 PA5 PA6 PA7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
-                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB0 PB1 PB3 PB4 
-                           PB5 PB6 PB7 PB8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4 
-                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */
